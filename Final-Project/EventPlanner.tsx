@@ -230,7 +230,7 @@ const EventPlanner: React.FC = () => {
         />
       </div>
       
-      {/* Events List */}
+      
       <div className="events-list">
         {filteredEvents.length === 0 ? (
           <div className="no-events">
