@@ -1,13 +1,25 @@
 import React from 'react';
+import { SafeAreaView, StatusBar, Platform, StyleSheet } from 'react-native';
 import EventPlanner from './EventPlanner';
-import './App.css';
 
 function App() {
   return (
-    <div className="app-container">
+    <SafeAreaView style={styles.container}>
+      <StatusBar 
+        barStyle="dark-content" 
+        backgroundColor="#f3f4f6"
+      />
       <EventPlanner />
-    </div>
+    </SafeAreaView>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#f3f4f6',
+    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
+  },
+});
 
 export default App;
