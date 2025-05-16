@@ -149,8 +149,30 @@ const EventPlanner: React.FC = () => {
             <TextInput
               style={styles.input}
               value={formData.date}
-              onChangeText={(text) => handleChange('date', text)}
+              onChangeText={(text) => {
+                // Remove all non-digit characters
+                let digits = text.replace(/\D/g, '');
+          
+                // Limit max length to 8 digits (YYYYMMDD)
+                if (digits.length > 8) {
+                  digits = digits.slice(0, 8);
+                }
+          
+                // Build formatted date with dashes as user types
+                let formatted = '';
+                if (digits.length <= 4) {
+                  formatted = digits;
+                } else if (digits.length <= 6) {
+                  formatted = digits.slice(0, 4) + '-' + digits.slice(4);
+                } else {
+                  formatted = digits.slice(0, 4) + '-' + digits.slice(4, 6) + '-' + digits.slice(6);
+                }
+          
+                handleChange('date', formatted);
+              }}
               placeholder="YYYY-MM-DD"
+              keyboardType="number-pad"
+              maxLength={10}
             />
           </View>
           
