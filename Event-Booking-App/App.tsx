@@ -1,16 +1,26 @@
 import React from 'react';
 import { SafeAreaView, StatusBar, Platform, StyleSheet } from 'react-native';
-import EventPlanner from './EventPlanner';
+import { NavigationContainer } from '@react-navigation/native';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
+import StackNavigator from './app/navigation/StackNavigator';
+import { EventProvider } from './app/context/EventContext';  // <-- import EventProvider
+import 'react-native-get-random-values';
 
 function App() {
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar 
-        barStyle="dark-content" 
-        backgroundColor="#f3f4f6"
-      />
-      <EventPlanner />
-    </SafeAreaView>
+    <EventProvider> {/* Wrap entire app in EventProvider */}
+      <SafeAreaProvider>
+        <NavigationContainer>
+          <SafeAreaView style={styles.container}>
+            <StatusBar 
+              barStyle="dark-content" 
+              backgroundColor="#f3f4f6"
+            />
+            <StackNavigator />
+          </SafeAreaView>
+        </NavigationContainer>
+      </SafeAreaProvider>
+    </EventProvider>
   );
 }
 
