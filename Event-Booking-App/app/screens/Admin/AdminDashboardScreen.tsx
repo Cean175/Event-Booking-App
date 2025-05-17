@@ -53,13 +53,13 @@ const styles = StyleSheet.create({
   tabButton: {
     paddingVertical: 8,
     paddingHorizontal: 16,
-    borderRadius: 9999, // fully rounded
+    borderRadius: 9999, 
   },
   activeTab: {
-    backgroundColor: '#3b82f6', // blue-500
+    backgroundColor: '#3b82f6', 
   },
   inactiveTab: {
-    backgroundColor: '#d1d5db', // gray-300
+    backgroundColor: '#d1d5db',
   },
   tabButtonText: {
     color: 'white',

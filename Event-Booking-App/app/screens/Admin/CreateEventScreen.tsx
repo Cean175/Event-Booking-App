@@ -4,9 +4,8 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { useNavigation } from '@react-navigation/native';
 import { useEvent } from '../../context/EventContext';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import type { RootStackParamList } from '../../navigation/StackNavigator'; // adjust path to your navigator types
+import type { RootStackParamList } from '../../navigation/StackNavigator';
 
-// Define the navigation prop type for type safety
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'CreateEvent'>;
 
 export default function CreateEventScreen() {
@@ -14,40 +13,66 @@ export default function CreateEventScreen() {
   const navigation = useNavigation<NavigationProp>();
 
   const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
   const [date, setDate] = useState<Date | null>(null);
-  const [time, setTime] = useState<Date | null>(null);
+  const [startTime, setStartTime] = useState<Date | null>(null);
+  const [endTime, setEndTime] = useState<Date | null>(null);
   const [showDatePicker, setShowDatePicker] = useState(false);
-  const [showTimePicker, setShowTimePicker] = useState(false);
+  const [showStartTimePicker, setShowStartTimePicker] = useState(false);
+  const [showEndTimePicker, setShowEndTimePicker] = useState(false);
+
+  const getDurationText = () => {
+    if (!startTime || !endTime) return '';
+    const diffMs = endTime.getTime() - startTime.getTime();
+    if (diffMs <= 0) return 'Invalid duration';
+
+    const diffMins = Math.floor(diffMs / 60000);
+    const hours = Math.floor(diffMins / 60);
+    const minutes = diffMins % 60;
+    return `${hours}h ${minutes}m`;
+  };
 
   const handleSubmit = () => {
-    if (!title || !date || !time) {
+    if (!title || !description || !date || !startTime || !endTime) {
       Alert.alert('All fields are required');
       return;
     }
 
     const now = new Date();
-    const selectedDateTime = new Date(date);
-    selectedDateTime.setHours(time.getHours());
-    selectedDateTime.setMinutes(time.getMinutes());
-    selectedDateTime.setSeconds(0);
-    selectedDateTime.setMilliseconds(0);
+    const eventStart = new Date(date);
+    eventStart.setHours(startTime.getHours());
+    eventStart.setMinutes(startTime.getMinutes());
 
-    if (selectedDateTime < now) {
-      Alert.alert('Event must be in the future');
+    const eventEnd = new Date(date);
+    eventEnd.setHours(endTime.getHours());
+    eventEnd.setMinutes(endTime.getMinutes());
+
+    if (eventStart < now) {
+      Alert.alert('Event must start in the future');
+      return;
+    }
+
+    if (eventEnd <= eventStart) {
+      Alert.alert('End time must be after start time');
       return;
     }
 
     addEvent({
       title,
-      date: selectedDateTime.toLocaleDateString(),
-      time: selectedDateTime.toLocaleTimeString(),
+      description,
+      date: eventStart.toLocaleDateString(),
+      startTime: eventStart.toLocaleTimeString(),
+      endTime: eventEnd.toLocaleTimeString(),
+      duration: getDurationText(),
     });
 
     Alert.alert('Event Added!');
     setTitle('');
+    setDescription('');
     setDate(null);
-    setTime(null);
-    navigation.navigate('EventList'); // Make sure this screen is in your navigator
+    setStartTime(null);
+    setEndTime(null);
+    navigation.navigate('EventList');
   };
 
   return (
@@ -73,18 +98,53 @@ export default function CreateEventScreen() {
         />
       )}
 
-      <Button title="Pick Time" onPress={() => setShowTimePicker(true)} />
-      {time && <Text style={{ marginVertical: 8 }}>Time: {time.toLocaleTimeString()}</Text>}
-      {showTimePicker && (
+      {/* Start Time Picker */}
+      <Button title="Pick Start Time" onPress={() => setShowStartTimePicker(true)} />
+      {startTime && <Text style={{ marginVertical: 8 }}>Start: {startTime.toLocaleTimeString()}</Text>}
+      {showStartTimePicker && (
         <DateTimePicker
           mode="time"
-          value={time || new Date()}
+          value={startTime || new Date()}
           onChange={(_, selectedTime) => {
-            setShowTimePicker(false);
-            if (selectedTime) setTime(selectedTime);
+            setShowStartTimePicker(false);
+            if (selectedTime) setStartTime(selectedTime);
           }}
         />
       )}
+
+      {/* End Time Picker */}
+      <Button title="Pick End Time" onPress={() => setShowEndTimePicker(true)} />
+      {endTime && <Text style={{ marginVertical: 8 }}>End: {endTime.toLocaleTimeString()}</Text>}
+      {showEndTimePicker && (
+        <DateTimePicker
+          mode="time"
+          value={endTime || new Date()}
+          onChange={(_, selectedTime) => {
+            setShowEndTimePicker(false);
+            if (selectedTime) setEndTime(selectedTime);
+          }}
+        />
+      )}
+
+      {/* Show Duration */}
+      {startTime && endTime && (
+        <Text style={{ marginTop: 8, fontStyle: 'italic' }}>Duration: {getDurationText()}</Text>
+      )}
+
+      {/* Description */}
+      <TextInput
+        placeholder="Event Description"
+        value={description}
+        onChangeText={setDescription}
+        style={{
+          borderBottomWidth: 1,
+          marginTop: 20,
+          marginBottom: 20,
+          fontSize: 16,
+        }}
+        multiline
+        numberOfLines={3}
+      />
 
       <View style={{ marginTop: 20 }}>
         <Button title="Create Event" onPress={handleSubmit} />
