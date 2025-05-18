@@ -1,6 +1,6 @@
 import React from 'react';
 import { SafeAreaView, StatusBar, Platform, StyleSheet } from 'react-native';
-import EventPlanner from './EventPlanner';
+import EventPlanner from './screens/EventPlanner';
 
 function App() {
   return (
