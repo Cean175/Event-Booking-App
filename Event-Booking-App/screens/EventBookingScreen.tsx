@@ -34,8 +34,11 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   title: {
-    fontSize: 32,
+    fontFamily: 'Arial',
+    fontSize: 45,
     fontWeight: 'bold',
+    height : 400,
+    textAlign: 'center',
     marginBottom: 40,
     color: '#333',
   },
