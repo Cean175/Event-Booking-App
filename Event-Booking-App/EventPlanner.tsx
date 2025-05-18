@@ -24,12 +24,11 @@ const EventPlanner: React.FC = () => {
     location: '',
     attendees: 0,
   });
-  const [searchTerm, setSearchTerm] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [sidebarVisible, setSidebarVisible] = useState(false);
   const [viewMode, setViewMode] = useState<'all' | 'saved'>('all');
 
-  // Load events from AsyncStorage instead of localStorage
+ 
   useEffect(() => {
     const loadEvents = async () => {
       try {
@@ -45,7 +44,7 @@ const EventPlanner: React.FC = () => {
     loadEvents();
   }, []);
 
-  // Save events to AsyncStorage instead of localStorage
+  
   useEffect(() => {
     const saveEvents = async () => {
       try {
@@ -67,7 +66,7 @@ const EventPlanner: React.FC = () => {
   
   const handleSubmit = () => {
     if (editingId) {
-      // Update existing event
+      
       setEvents(prev => 
         prev.map(event => 
           event.id === editingId ? { ...formData, id: editingId } : event
@@ -75,7 +74,7 @@ const EventPlanner: React.FC = () => {
       );
       setEditingId(null);
     } else {
-      // Create new event
+      
       const newEvent = {
         ...formData,
         id: Date.now().toString(),
@@ -83,7 +82,7 @@ const EventPlanner: React.FC = () => {
       setEvents(prev => [...prev, newEvent]);
     }
     
-    // Reset form
+    
     setFormData({
       title: '',
       description: '',
@@ -122,7 +121,7 @@ const EventPlanner: React.FC = () => {
         { 
           text: "Logout", 
           onPress: () => {
-            // Implement actual logout functionality here
+           
             Alert.alert("Logged out successfully");
             setSidebarVisible(false);
           },
@@ -146,19 +145,13 @@ const EventPlanner: React.FC = () => {
   };
   
   const filteredEvents = events.filter(event => {
-    // First filter by search term
-    const matchesSearch = 
-      event.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      event.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      event.location.toLowerCase().includes(searchTerm.toLowerCase());
     
-    // If in saved mode, assume for this example that all events are "saved"
-    // In a real app, you would have some property like "isSaved" to filter by
     if (viewMode === 'saved') {
-      return matchesSearch; // For now, just show all search results in saved mode too
+      return true; 
     }
     
-    return matchesSearch;
+    
+    return true;
   });
 
   return (
@@ -220,15 +213,15 @@ const EventPlanner: React.FC = () => {
                 style={styles.input}
                 value={formData.date}
                 onChangeText={(text) => {
-                  // Remove all non-digit characters
+                  
                   let digits = text.replace(/\D/g, '');
             
-                  // Limit max length to 8 digits (YYYYMMDD)
+                 
                   if (digits.length > 8) {
                     digits = digits.slice(0, 8);
                   }
             
-                  // Build formatted date with dashes as user types
+                  
                   let formatted = '';
                   if (digits.length <= 4) {
                     formatted = digits;
@@ -307,18 +300,9 @@ const EventPlanner: React.FC = () => {
           </View>
         )}
         
-        {/* Search Bar */}
-        <View style={styles.searchContainer}>
-          <Text style={styles.searchIcon}>🔍</Text>
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Search events..."
-            value={searchTerm}
-            onChangeText={setSearchTerm}
-          />
-        </View>
         
-        {/* Events List */}
+        
+       
         <View style={styles.eventsList}>
           {filteredEvents.length === 0 ? (
             <View style={styles.noEvents}>
@@ -341,7 +325,7 @@ const EventPlanner: React.FC = () => {
                       onPress={() => handleEdit(event)}
                       style={styles.iconButton}
                     >
-                      <Text>✏️</Text>
+                      <Text>Edit</Text>
                     </TouchableOpacity>
                     <TouchableOpacity 
                       onPress={() => handleDelete(event.id)}
@@ -354,15 +338,15 @@ const EventPlanner: React.FC = () => {
                 
                 <View style={styles.eventDetails}>
                   <View style={styles.eventDetail}>
-                    <Text style={styles.eventIcon}>📅</Text>
+                    <Text style={styles.eventIcon}>Date: </Text>
                     <Text>{event.date}</Text>
                   </View>
                   <View style={styles.eventDetail}>
-                    <Text style={styles.eventIcon}>🕒</Text>
+                    <Text style={styles.eventIcon}>Time </Text>
                     <Text>{event.time}</Text>
                   </View>
                   <View style={styles.eventDetail}>
-                    <Text style={styles.eventIcon}>📍</Text>
+                    <Text style={styles.eventIcon}>Location</Text>
                     <Text>{event.location}</Text>
                   </View>
                 </View>
@@ -518,6 +502,7 @@ const styles = StyleSheet.create({
     borderColor: '#ddd',
     marginBottom: 20,
     paddingHorizontal: 12,
+    
   },
   searchIcon: {
     marginRight: 8,

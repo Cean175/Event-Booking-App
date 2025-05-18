@@ -27,7 +27,7 @@ const Sidebar: React.FC<SidebarProps> = ({ visible, onClose, onLogout, onViewSav
             style={styles.menuItem} 
             onPress={onViewSavedEvents}
           >
-            <Text style={styles.menuItemIcon}>📋</Text>
+        
             <Text style={styles.menuItemText}>View Saved Events</Text>
           </TouchableOpacity>
           
@@ -35,7 +35,7 @@ const Sidebar: React.FC<SidebarProps> = ({ visible, onClose, onLogout, onViewSav
             style={[styles.menuItem, styles.logoutItem]} 
             onPress={onLogout}
           >
-            <Text style={styles.menuItemIcon}>🚪</Text>
+           
             <Text style={styles.menuItemText}>Logout</Text>
           </TouchableOpacity>
         </View>
