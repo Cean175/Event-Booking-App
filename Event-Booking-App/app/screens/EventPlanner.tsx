@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, Platform, Alert } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
- // Assuming you have a Sidebar component
+
 
 
 interface Event {

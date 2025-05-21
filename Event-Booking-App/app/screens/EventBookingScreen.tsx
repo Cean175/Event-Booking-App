@@ -1,7 +1,17 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import type { StackNavigationProp } from '@react-navigation/stack';
 
-const EventBookingScreen = ({ navigation }) => {
+type RootStackParamList = {
+  AdminLogin: undefined;
+  UserLogin: undefined;
+};
+
+type EventBookingScreenProps = {
+  navigation: StackNavigationProp<RootStackParamList>;
+};
+
+const EventBookingScreen = ({ navigation }: EventBookingScreenProps) => {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Event Booking</Text>

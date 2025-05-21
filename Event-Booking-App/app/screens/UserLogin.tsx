@@ -18,6 +18,7 @@ const UserLogin = ({ navigation }: UserLoginProps) => {
   const handleLogin = () => {
     if (email === 'user@example.com' && password === 'user123') {
       navigation.navigate('EventPlanner');
+      
     } else {
       Alert.alert('Login Failed', 'Invalid user credentials.');
     }
