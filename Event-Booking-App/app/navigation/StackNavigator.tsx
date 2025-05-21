@@ -7,6 +7,7 @@ import EventDetailsScreen from '../Admin/EventDetailsScreen';
 import EventBookingScreen from '../screens/EventBookingScreen';
 import AdminLogin from '../screens/AdminLogin';
 import UserLogin from '../screens/UserLogin';
+import EventPlanner from '../screens/EventPlanner';
 
 export type RootStackParamList = {
   AdminLogin: undefined;
