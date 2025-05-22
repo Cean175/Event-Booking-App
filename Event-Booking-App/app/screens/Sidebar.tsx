@@ -1,16 +1,61 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Animated, Dimensions } from 'react-native';
+import { 
+  View, 
+  Text, 
+  TouchableOpacity, 
+  StyleSheet, 
+  Animated, 
+  Dimensions,
+  Alert 
+} from 'react-native';
+import { useNavigation } from '@react-navigation/native';
+import type { StackNavigationProp } from '@react-navigation/stack';
+
+type RootStackParamList = {
+  EventBooking: undefined;
+  // Add other screen types if needed
+};
 
 interface SidebarProps {
   visible: boolean;
   onClose: () => void;
-  onLogout: () => void;
   onViewSavedEvents: () => void;
+  onViewRegisteredEvents: () => void;
+  onViewAllEvents: () => void;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ visible, onClose, onLogout, onViewSavedEvents }) => {
+const Sidebar: React.FC<SidebarProps> = ({ 
+  visible, 
+  onClose, 
+  onViewSavedEvents,
+  onViewRegisteredEvents,
+  onViewAllEvents
+}) => {
+  const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   const screenWidth = Dimensions.get('window').width;
   const translateX = React.useRef(new Animated.Value(-screenWidth)).current;
+
+  const handleLogout = () => {
+    Alert.alert(
+      "Logout",
+      "Are you sure you want to logout?",
+      [
+        {
+          text: "Cancel",
+          style: "cancel",
+          onPress: () => console.log("Logout canceled")
+        },
+        { 
+          text: "Logout", 
+          style: "destructive",
+          onPress: () => {
+            onClose();
+            navigation.navigate('EventBooking');
+          }
+        }
+      ]
+    );
+  };
 
   React.useEffect(() => {
     Animated.timing(translateX, {
@@ -24,18 +69,53 @@ const Sidebar: React.FC<SidebarProps> = ({ visible, onClose, onLogout, onViewSav
 
   return (
     <View style={styles.container}>
-      <TouchableOpacity style={styles.overlay} onPress={onClose} />
+      <TouchableOpacity 
+        style={styles.overlay} 
+        onPress={onClose} 
+        activeOpacity={1}
+      />
       <Animated.View style={[styles.sidebar, { transform: [{ translateX }] }]}>
         <View style={styles.header}>
           <Text style={styles.headerText}>Menu</Text>
         </View>
         
-        <TouchableOpacity style={styles.menuItem} onPress={onViewSavedEvents}>
-          <Text style={styles.menuItemText}>View Saved Events</Text>
+        <TouchableOpacity 
+          style={styles.menuItem} 
+          onPress={() => {
+            onViewAllEvents();
+            onClose();
+          }}
+        >
+          <Text style={styles.menuItemText}>All Events</Text>
         </TouchableOpacity>
         
-        <TouchableOpacity style={styles.menuItem} onPress={onLogout}>
-          <Text style={styles.menuItemText}>Logout</Text>
+        <TouchableOpacity 
+          style={styles.menuItem} 
+          onPress={() => {
+            onViewSavedEvents();
+            onClose();
+          }}
+        >
+          <Text style={styles.menuItemText}>Saved Events</Text>
+        </TouchableOpacity>
+        
+        <TouchableOpacity 
+          style={styles.menuItem} 
+          onPress={() => {
+            onViewRegisteredEvents();
+            onClose();
+          }}
+        >
+          <Text style={styles.menuItemText}>Registered Events</Text>
+        </TouchableOpacity>
+        
+        <View style={styles.spacer} />
+        
+        <TouchableOpacity 
+          style={styles.logoutItem} 
+          onPress={handleLogout}
+        >
+          <Text style={styles.logoutText}>Logout</Text>
         </TouchableOpacity>
       </Animated.View>
     </View>
@@ -66,25 +146,51 @@ const styles = StyleSheet.create({
     left: 0,
     width: '70%',
     backgroundColor: 'white',
-    paddingTop: 50,
+    paddingTop: 20,
+    justifyContent: 'space-between',
+    shadowColor: '#000',
+    shadowOffset: { width: 2, height: 0 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
   },
   header: {
     padding: 16,
     borderBottomWidth: 1,
     borderBottomColor: '#e0e0e0',
-    marginBottom: 16,
+    marginBottom: 8,
   },
   headerText: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: 'bold',
+    color: '#333',
   },
   menuItem: {
-    padding: 16,
-    borderBottomWidth: 1,
+    paddingVertical: 16,
+    paddingHorizontal: 24,
+    borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: '#f0f0f0',
   },
   menuItemText: {
     fontSize: 16,
+    color: '#444',
+  },
+  spacer: {
+    flex: 1,
+  },
+  logoutItem: {
+    padding: 16,
+    margin: 16,
+    borderRadius: 8,
+    backgroundColor: '#f8f8f8',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#d32f2f',
+  },
+  logoutText: {
+    fontSize: 16,
+    color: '#d32f2f',
+    fontWeight: '600',
   },
 });
 

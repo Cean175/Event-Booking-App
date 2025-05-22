@@ -1,582 +1,519 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, Platform, Alert } from 'react-native';
+import {
+  View, Text, TouchableOpacity, ScrollView,
+  StyleSheet, Alert, TextInput, Modal
+} from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Sidebar from './Sidebar';
-
 
 interface Event {
   id: string;
   title: string;
   description: string;
-  date: string;
-  time: string;
   location: string;
-  attendees: number;
+  date: string; // Format: YYYY-MM-DD
+  startTime: string;
+  endTime: string;
+  duration?: string;
+  createdAt?: string;
+  updatedAt?: string;
+  organizerId?: string;
+  isBooked?: boolean;
+  isFavorite?: boolean;
+  attendees?: number;
+  registered?: boolean;
 }
 
 const EventPlanner: React.FC = () => {
-  
   const [events, setEvents] = useState<Event[]>([]);
-  const [formData, setFormData] = useState<Omit<Event, 'id'>>({
-    title: '',
-    description: '',
-    date: '',
-    time: '',
-    location: '',
-    attendees: 0,
-  });
-  const [editingId, setEditingId] = useState<string | null>(null);
   const [sidebarVisible, setSidebarVisible] = useState(false);
-  const [viewMode, setViewMode] = useState<'all' | 'saved'>('all');
+  const [viewMode, setViewMode] = useState<'all' | 'saved' | 'registered'>('all');
+  const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
+  const [sortMode, setSortMode] = useState<'date' | 'duration'>('date');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
+  const [sortDropdownVisible, setSortDropdownVisible] = useState(false);
+  const [registeringEvent, setRegisteringEvent] = useState<Event | null>(null);
+  const [emailInput, setEmailInput] = useState('');
 
- 
   useEffect(() => {
     const loadEvents = async () => {
       try {
         const storedEvents = await AsyncStorage.getItem('events');
         if (storedEvents) {
-          setEvents(JSON.parse(storedEvents));
+          const parsed: Event[] = JSON.parse(storedEvents);
+          const withAttendees = parsed.map(ev => ({
+            ...ev,
+            attendees: ev.attendees || 0,
+            registered: ev.registered || false
+          }));
+          setEvents(sortEvents(withAttendees, sortMode, sortDirection));
         }
       } catch (error) {
         console.error('Failed to load events:', error);
       }
     };
-    
+
     loadEvents();
   }, []);
 
-  
-  useEffect(() => {
-    const saveEvents = async () => {
-      try {
-        await AsyncStorage.setItem('events', JSON.stringify(events));
-      } catch (error) {
-        console.error('Failed to save events:', error);
+  const sortEvents = (events: Event[], mode: 'date' | 'duration', direction: 'asc' | 'desc') => {
+    return [...events].sort((a, b) => {
+      let comparison = 0;
+      
+      if (mode === 'date') {
+        comparison = new Date(a.date).getTime() - new Date(b.date).getTime();
+      } else {
+        const getMinutes = (t: string) => {
+          const [h, m] = t.split(':').map(Number);
+          return h * 60 + m;
+        };
+        const durationA = getMinutes(a.endTime) - getMinutes(a.startTime);
+        const durationB = getMinutes(b.endTime) - getMinutes(b.startTime);
+        comparison = durationA - durationB;
       }
-    };
-    
-    saveEvents();
-  }, [events]);
-
-  const handleChange = (name: string, value: string) => {
-    setFormData(prev => ({
-      ...prev,
-      [name]: name === 'attendees' ? parseInt(value) || 0 : value,
-    }));
-  };
-  
-  const handleSubmit = () => {
-    if (editingId) {
       
-      setEvents(prev => 
-        prev.map(event => 
-          event.id === editingId ? { ...formData, id: editingId } : event
-        )
-      );
-      setEditingId(null);
-    } else {
-      
-      const newEvent = {
-        ...formData,
-        id: Date.now().toString(),
-      };
-      setEvents(prev => [...prev, newEvent]);
-    }
-    
-    
-    setFormData({
-      title: '',
-      description: '',
-      date: '',
-      time: '',
-      location: '',
-      attendees: 0,
+      return direction === 'asc' ? comparison : -comparison;
     });
   };
-  
-  const handleDelete = (id: string) => {
-    setEvents(prev => prev.filter(event => event.id !== id));
-  };
 
-  const handleEdit = (event: Event) => {
-    setFormData({
-      title: event.title,
-      description: event.description,
-      date: event.date,
-      time: event.time,
-      location: event.location,
-      attendees: event.attendees,
-    });
-    setEditingId(event.id);
-  };
-  
+  const toggleSidebar = () => setSidebarVisible(!sidebarVisible);
+
   const handleLogout = () => {
-    Alert.alert(
-      "Logout",
-      "Are you sure you want to logout?",
-      [
-        {
-          text: "Cancel",
-          style: "cancel"
-        },
-        { 
-          text: "Logout", 
-          onPress: () => {
-           
-            Alert.alert("Logged out successfully");
-            setSidebarVisible(false);
-          },
-          style: "destructive"
+    Alert.alert("Logout", "Are you sure you want to logout?", [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Logout", style: "destructive", onPress: () => {
+          setSidebarVisible(false);
+          Alert.alert("Logged out successfully");
         }
-      ]
+      }
+    ]);
+  };
+
+  const toggleFavorite = async (id: string) => {
+    const updated = events.map(ev =>
+      ev.id === id ? { ...ev, isFavorite: !ev.isFavorite } : ev
     );
+    setEvents(updated);
+    await AsyncStorage.setItem('events', JSON.stringify(updated));
   };
 
-  const handleViewSavedEvents = () => {
-    setViewMode('saved');
-    setSidebarVisible(false);
-  };
-
-  const toggleSidebar = () => {
-    setSidebarVisible(!sidebarVisible);
-  };
-
-  const returnToAllEvents = () => {
-    setViewMode('all');
-  };
-  
-  const filteredEvents = events.filter(event => {
+  const handleSortOptionSelect = (mode: 'date' | 'duration') => {
+    const newDirection = sortMode === mode ? 
+      (sortDirection === 'asc' ? 'desc' : 'asc') : 'asc';
     
-    if (viewMode === 'saved') {
-      return true; 
+    setSortMode(mode);
+    setSortDirection(newDirection);
+    setEvents(sortEvents(events, mode, newDirection));
+    setSortDropdownVisible(false);
+  };
+
+  const openEventDetails = (event: Event) => {
+    setSelectedEvent(event);
+  };
+
+  const closeEventDetails = () => {
+    setSelectedEvent(null);
+  };
+
+  const openRegister = (event: Event) => {
+    setRegisteringEvent(event);
+    setEmailInput('');
+  };
+
+  const handleRegister = async () => {
+    if (!emailInput) return Alert.alert("Error", "Please enter your email.");
+    const updated = events.map(ev =>
+      ev.id === registeringEvent?.id
+        ? { 
+            ...ev, 
+            attendees: (ev.attendees || 0) + 1,
+            registered: true
+          }
+        : ev
+    );
+    setEvents(updated);
+    await AsyncStorage.setItem('events', JSON.stringify(updated));
+    Alert.alert("Success", "You are registered!");
+    setRegisteringEvent(null);
+    if (selectedEvent) {
+      setSelectedEvent({
+        ...selectedEvent,
+        attendees: (selectedEvent.attendees || 0) + 1,
+        registered: true
+      });
     }
-    
-    
-    return true;
-  });
+  };
+
+  const handleCancelRegistration = async (eventId: string) => {
+    const updated = events.map(ev =>
+      ev.id === eventId
+        ? { 
+            ...ev, 
+            attendees: Math.max((ev.attendees || 0) - 1, 0),
+            registered: false
+          }
+        : ev
+    );
+    setEvents(updated);
+    await AsyncStorage.setItem('events', JSON.stringify(updated));
+    Alert.alert("Success", "Registration canceled!");
+    if (selectedEvent?.id === eventId) {
+      setSelectedEvent({
+        ...selectedEvent,
+        attendees: Math.max((selectedEvent.attendees || 0) - 1, 0),
+        registered: false
+      });
+    }
+  };
+
+  const filteredEvents = viewMode === 'saved'
+    ? events.filter(e => e.isFavorite)
+    : viewMode === 'registered'
+    ? events.filter(e => e.registered)
+    : events;
+
+  const getSortButtonText = () => {
+    const modeText = sortMode === 'date' ? 'Date' : 'Duration';
+    const directionText = sortDirection === 'asc' ? '↑' : '↓';
+    return `Sort: ${modeText} ${directionText}`;
+  };
 
   return (
     <View style={styles.container}>
-      <Sidebar 
-        visible={sidebarVisible} 
-        onClose={() => setSidebarVisible(false)}
-        onLogout={handleLogout}
-        onViewSavedEvents={handleViewSavedEvents}
-      />
-      
+      <Sidebar
+  visible={sidebarVisible}
+  onClose={() => setSidebarVisible(false)}
+  onViewSavedEvents={() => { 
+    setViewMode('saved'); 
+    setSidebarVisible(false); 
+  }}
+  onViewRegisteredEvents={() => { 
+    setViewMode('registered'); 
+    setSidebarVisible(false); 
+  }}
+  onViewAllEvents={() => { 
+    setViewMode('all'); 
+    setSidebarVisible(false); 
+  }}
+/>
+
       <View style={styles.header}>
         <TouchableOpacity onPress={toggleSidebar} style={styles.menuButton}>
           <Text style={styles.menuButtonText}>☰</Text>
         </TouchableOpacity>
         <Text style={styles.appTitle}>Event Management Planner</Text>
-        <View style={styles.headerRight} />
+        <View style={styles.sortContainer}>
+          <TouchableOpacity 
+            onPress={() => setSortDropdownVisible(!sortDropdownVisible)}
+            style={styles.sortButton}
+          >
+            <Text style={styles.sortButtonText}>{getSortButtonText()}</Text>
+          </TouchableOpacity>
+          {sortDropdownVisible && (
+            <View style={styles.sortDropdown}>
+              <TouchableOpacity 
+                style={styles.sortOption}
+                onPress={() => handleSortOptionSelect('date')}
+              >
+                <Text>Date {sortMode === 'date' ? (sortDirection === 'asc' ? '↑' : '↓') : ''}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={styles.sortOption}
+                onPress={() => handleSortOptionSelect('duration')}
+              >
+                <Text>Duration {sortMode === 'duration' ? (sortDirection === 'asc' ? '↑' : '↓') : ''}</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+        </View>
       </View>
-      
-      {viewMode === 'saved' ? (
+
+      {viewMode !== 'all' && (
         <View style={styles.viewModeHeader}>
-          <TouchableOpacity onPress={returnToAllEvents} style={styles.backButton}>
+          <TouchableOpacity onPress={() => setViewMode('all')}>
             <Text>← Back</Text>
           </TouchableOpacity>
-          <Text style={styles.viewModeTitle}>Saved Events</Text>
+          <Text style={styles.viewModeTitle}>
+            {viewMode === 'saved' ? 'Saved Events' : 'Registered Events'}
+          </Text>
         </View>
-      ) : null}
-      
-      <ScrollView style={styles.content}>
-        {viewMode === 'all' && (
-          <View style={styles.formContainer}>
-            <Text style={styles.formTitle}>
-              {editingId ? 'Edit Event' : 'Add New Event'}
-            </Text>
-            
-            <View style={styles.formGroup}>
-              <Text style={styles.formLabel}>Title</Text>
-              <TextInput
-                style={styles.input}
-                value={formData.title}
-                onChangeText={(text) => handleChange('title', text)}
-                placeholder="Event title"
-              />
-            </View>
-            
-            <View style={styles.formGroup}>
-              <Text style={styles.formLabel}>Location</Text>
-              <TextInput
-                style={styles.input}
-                value={formData.location}
-                onChangeText={(text) => handleChange('location', text)}
-                placeholder="Event location"
-              />
-            </View>
-            
-            <View style={styles.formGroup}>
-              <Text style={styles.formLabel}>Date</Text>
-              <TextInput
-                style={styles.input}
-                value={formData.date}
-                onChangeText={(text) => {
-                  
-                  let digits = text.replace(/\D/g, '');
-            
-                 
-                  if (digits.length > 8) {
-                    digits = digits.slice(0, 8);
-                  }
-            
-                  
-                  let formatted = '';
-                  if (digits.length <= 4) {
-                    formatted = digits;
-                  } else if (digits.length <= 6) {
-                    formatted = digits.slice(0, 4) + '-' + digits.slice(4);
-                  } else {
-                    formatted = digits.slice(0, 4) + '-' + digits.slice(4, 6) + '-' + digits.slice(6);
-                  }
-            
-                  handleChange('date', formatted);
-                }}
-                placeholder="YYYY-MM-DD"
-                keyboardType="number-pad"
-                maxLength={10}
-              />
-            </View>
-            
-            <View style={styles.formGroup}>
-              <Text style={styles.formLabel}>Time</Text>
-              <TextInput
-                style={styles.input}
-                value={formData.time}
-                onChangeText={(text) => handleChange('time', text)}
-                placeholder="HH:MM"
-              />
-            </View>
-            
-            <View style={styles.formGroup}>
-              <Text style={styles.formLabel}>Expected Attendees</Text>
-              <TextInput
-                style={styles.input}
-                value={formData.attendees.toString()}
-                onChangeText={(text) => handleChange('attendees', text)}
-                placeholder="0"
-                keyboardType="numeric"
-              />
-            </View>
-            
-            <View style={styles.formGroup}>
-              <Text style={styles.formLabel}>Description</Text>
-              <TextInput
-                style={[styles.input, styles.textArea]}
-                value={formData.description}
-                onChangeText={(text) => handleChange('description', text)}
-                placeholder="Event description"
-                multiline
-              />
-            </View>
-            
-            <View style={styles.buttonRow}>
-              {editingId && (
-                <TouchableOpacity
-                  style={[styles.button, styles.secondaryButton]}
-                  onPress={() => {
-                    setEditingId(null);
-                    setFormData({
-                      title: '',
-                      description: '',
-                      date: '',
-                      time: '',
-                      location: '',
-                      attendees: 0,
-                    });
-                  }}
-                >
-                  <Text style={styles.secondaryButtonText}>Cancel</Text>
-                </TouchableOpacity>
-              )}
+      )}
+
+      {selectedEvent ? (
+        <View style={styles.eventDetailContainer}>
+          <TouchableOpacity onPress={closeEventDetails} style={styles.backButton}>
+            <Text style={styles.backButtonText}>← Back</Text>
+          </TouchableOpacity>
+          
+          <ScrollView style={styles.eventDetailContent}>
+            <Text style={styles.eventDetailTitle}>{selectedEvent.title}</Text>
+            <Text style={styles.eventDetailText}>Date: {selectedEvent.date}</Text>
+            <Text style={styles.eventDetailText}>Time: {selectedEvent.startTime} - {selectedEvent.endTime}</Text>
+            {selectedEvent.attendees !== undefined && (
+              <Text style={styles.eventDetailText}>Attendees: {selectedEvent.attendees}</Text>
+            )}
+            <Text style={styles.eventDetailText}>Description: {selectedEvent.description}</Text>
+            <Text style={styles.eventDetailText}>Location: {selectedEvent.location}</Text>
+            {selectedEvent.duration && (
+              <Text style={styles.eventDetailText}>Duration: {selectedEvent.duration}</Text>
+            )}
+            {selectedEvent.isBooked !== undefined && (
+              <Text style={styles.eventDetailText}>
+                Status: {selectedEvent.isBooked ? 'Booked' : 'Available'}
+              </Text>
+            )}
+            {selectedEvent.createdAt && (
+              <Text style={styles.eventDetailText}>
+                Created: {new Date(selectedEvent.createdAt).toLocaleString()}
+              </Text>
+            )}
+
+            {selectedEvent.registered ? (
               <TouchableOpacity
-                style={[styles.button, styles.primaryButton]}
-                onPress={handleSubmit}
+                style={[styles.actionButton, styles.cancelButton]}
+                onPress={() => handleCancelRegistration(selectedEvent.id)}
               >
-                <Text style={styles.primaryButtonText}>{editingId ? 'Update Event' : 'Add Event'}</Text>
+                <Text style={styles.actionButtonText}>Cancel Registration</Text>
+              </TouchableOpacity>
+            ) : (
+              <TouchableOpacity
+                style={[styles.actionButton, styles.registerButton]}
+                onPress={() => openRegister(selectedEvent)}
+              >
+                <Text style={styles.actionButtonText}>Register</Text>
+              </TouchableOpacity>
+            )}
+
+            <TouchableOpacity
+              onPress={() => toggleFavorite(selectedEvent.id)}
+              style={styles.heartButton}
+            >
+              <Text style={{ fontSize: 24 }}>
+                {selectedEvent.isFavorite ? '❤️' : '🤍'}
+              </Text>
+            </TouchableOpacity>
+          </ScrollView>
+        </View>
+      ) : (
+        <ScrollView contentContainerStyle={styles.eventsList}>
+          {filteredEvents.length === 0 ? (
+            <Text style={styles.noEventsText}>
+              {viewMode === 'saved' 
+                ? 'No saved events found.' 
+                : viewMode === 'registered'
+                ? 'No registered events found.'
+                : 'No events available.'}
+            </Text>
+          ) : (
+            filteredEvents.map(event => (
+              <TouchableOpacity
+                key={event.id}
+                style={styles.eventCard}
+                onPress={() => openEventDetails(event)}
+              >
+                <Text style={styles.eventTitle}>{event.title}</Text>
+                <Text>Date: {event.date}</Text>
+                <Text>Time: {event.startTime} - {event.endTime}</Text>
+                {event.attendees !== undefined && (
+                  <Text>Attendees: {event.attendees}</Text>
+                )}
+                {event.registered && (
+                  <Text style={styles.registeredBadge}>Registered</Text>
+                )}
+                <TouchableOpacity
+                  onPress={(e) => {
+                    e.stopPropagation();
+                    toggleFavorite(event.id);
+                  }}
+                  style={styles.heartButton}
+                >
+                  <Text style={{ fontSize: 18 }}>
+                    {event.isFavorite ? '❤️' : '🤍'}
+                  </Text>
+                </TouchableOpacity>
+              </TouchableOpacity>
+            ))
+          )}
+        </ScrollView>
+      )}
+
+      <Modal visible={!!registeringEvent} transparent>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={{ marginBottom: 10 }}>Enter your email:</Text>
+            <TextInput
+              placeholder="Email"
+              value={emailInput}
+              onChangeText={setEmailInput}
+              style={styles.input}
+              keyboardType="email-address"
+            />
+            <View style={{ flexDirection: 'row', gap: 10 }}>
+              <TouchableOpacity style={styles.modalBtn} onPress={handleRegister}>
+                <Text style={{ color: 'white' }}>Register</Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={[styles.modalBtn, { backgroundColor: 'gray' }]} 
+                onPress={() => setRegisteringEvent(null)}
+              >
+                <Text style={{ color: 'white' }}>Cancel</Text>
               </TouchableOpacity>
             </View>
           </View>
-        )}
-        
-        
-        
-       
-        <View style={styles.eventsList}>
-          {filteredEvents.length === 0 ? (
-            <View style={styles.noEvents}>
-              <Text style={styles.noEventsText}>
-                {viewMode === 'saved' 
-                  ? 'No saved events found.' 
-                  : 'No events found. Add your first event above!'}
-              </Text>
-            </View>
-          ) : (
-            filteredEvents.map(event => (
-              <View key={event.id} style={styles.eventCard}>
-                <View style={styles.eventHeader}>
-                  <View>
-                    <Text style={styles.eventTitle}>{event.title}</Text>
-                    <Text style={styles.eventDescription}>{event.description}</Text>
-                  </View>
-                  <View style={styles.eventActions}>
-                    <TouchableOpacity 
-                      onPress={() => handleEdit(event)}
-                      style={styles.iconButton}
-                    >
-                      <Text>Edit</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity 
-                      onPress={() => handleDelete(event.id)}
-                      style={styles.iconButton}
-                    >
-                      <Text>🗑️</Text>
-                    </TouchableOpacity>
-                  </View>
-                </View>
-                
-                <View style={styles.eventDetails}>
-                  <View style={styles.eventDetail}>
-                    <Text style={styles.eventIcon}>Date: </Text>
-                    <Text>{event.date}</Text>
-                  </View>
-                  <View style={styles.eventDetail}>
-                    <Text style={styles.eventIcon}>Time </Text>
-                    <Text>{event.time}</Text>
-                  </View>
-                  <View style={styles.eventDetail}>
-                    <Text style={styles.eventIcon}>Location</Text>
-                    <Text>{event.location}</Text>
-                  </View>
-                </View>
-                
-                <View style={styles.eventAttendees}>
-                  <Text style={styles.eventIcon}>👥</Text>
-                  <Text>{event.attendees} expected attendees</Text>
-                </View>
-              </View>
-            ))
-          )}
         </View>
-      </ScrollView>
+      </Modal>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f3f4f6',
-  },
+  container: { flex: 1, backgroundColor: '#f3f4f6' },
   header: {
     flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'space-between',
     padding: 10,
     backgroundColor: 'white',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.1,
-        shadowRadius: 2,
-      },
-      android: {
-        elevation: 2,
-      },
-    }),
-  },
-  menuButton: {
-    padding: 5,
-    width: 40,
-  },
-  menuButtonText: {
-    fontSize: 24,
-  },
-  headerRight: {
-    width: 40,
-  },
-  appTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#333',
-    flex: 1,
-    textAlign: 'center',
-  },
-  content: {
-    flex: 1,
-    padding: 20,
-  },
-  viewModeHeader: {
-    flexDirection: 'row',
     alignItems: 'center',
-    padding: 10,
-    backgroundColor: '#f0f4f8',
-    borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
+    position: 'relative',
+    zIndex: 10,
   },
-  backButton: {
-    marginRight: 10,
-    padding: 5,
-  },
-  viewModeTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  formContainer: {
-    backgroundColor: 'white',
-    borderRadius: 8,
-    padding: 16,
-    marginBottom: 20,
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-      },
-      android: {
-        elevation: 2,
-      },
-    }),
-  },
-  formTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    marginBottom: 16,
-  },
-  formGroup: {
-    marginBottom: 12,
-  },
-  formLabel: {
-    fontSize: 14,
-    fontWeight: '500',
-    marginBottom: 6,
-    color: '#555',
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 4,
-    padding: 10,
-    fontSize: 16,
-  },
-  textArea: {
-    minHeight: 80,
-  },
-  buttonRow: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    marginTop: 16,
-  },
-  button: {
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    borderRadius: 4,
-  },
-  primaryButton: {
-    backgroundColor: '#3b82f6',
-  },
-  primaryButtonText: {
-    color: 'white',
-    fontWeight: '600',
-  },
-  secondaryButton: {
+  menuButton: { padding: 10 },
+  menuButtonText: { fontSize: 24 },
+  appTitle: { fontSize: 18, fontWeight: 'bold', flex: 1, textAlign: 'center' },
+  viewModeHeader: { 
+    padding: 10, 
     backgroundColor: '#e5e7eb',
-    marginRight: 10,
-  },
-  secondaryButtonText: {
-    color: '#374151',
-    fontWeight: '600',
-  },
-  iconButton: {
-    padding: 4,
-  },
-  searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'white',
-    borderRadius: 4,
-    borderWidth: 1,
-    borderColor: '#ddd',
-    marginBottom: 20,
-    paddingHorizontal: 12,
-    
+    gap: 10
   },
-  searchIcon: {
-    marginRight: 8,
-  },
-  searchInput: {
-    flex: 1,
-    padding: 10,
-    fontSize: 16,
-  },
+  viewModeTitle: { fontSize: 16, fontWeight: 'bold' },
   eventsList: {
-    gap: 12,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    padding: 10,
   },
   eventCard: {
     backgroundColor: 'white',
+    width: '48%',
+    padding: 10,
     borderRadius: 8,
-    padding: 16,
-    marginBottom: 12,
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-      },
-      android: {
-        elevation: 2,
-      },
-    }),
+    marginBottom: 10,
+    elevation: 2,
+    position: 'relative',
   },
-  eventHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 12,
+  eventTitle: { fontSize: 16, fontWeight: 'bold' },
+  heartButton: { 
+    alignItems: 'center', 
+    marginTop: 10,
+    position: 'absolute',
+    right: 10,
+    top: 10
   },
-  eventTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    marginBottom: 4,
+  noEventsText: { 
+    textAlign: 'center', 
+    marginTop: 20, 
+    color: '#6b7280',
+    width: '100%'
   },
-  eventDescription: {
-    fontSize: 14,
-    color: '#666',
+  modalOverlay: {
+    flex: 1,
+    justifyContent: 'center',
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    padding: 30,
   },
-  eventActions: {
-    flexDirection: 'row',
-    gap: 8,
+  modalContent: {
+    backgroundColor: 'white',
+    borderRadius: 8,
+    padding: 20,
+    gap: 10
   },
-  eventDetails: {
-    marginTop: 12,
+  input: {
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 6,
+    padding: 8,
+    marginBottom: 10,
+  },
+  modalBtn: {
+    flex: 1,
+    backgroundColor: '#2563eb',
+    padding: 10,
+    borderRadius: 6,
+    alignItems: 'center',
+  },
+  sortContainer: {
+    position: 'relative',
+  },
+  sortButton: {
+    padding: 10,
+    backgroundColor: '#f0f0f0',
+    borderRadius: 6,
+  },
+  sortButtonText: {
+    fontWeight: 'bold',
+  },
+  sortDropdown: {
+    position: 'absolute',
+    top: 40,
+    right: 0,
+    backgroundColor: 'white',
+    borderRadius: 6,
+    elevation: 3,
+    width: 150,
+  },
+  sortOption: {
+    padding: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+  },
+  eventDetailContainer: {
+    flex: 1,
+    padding: 10,
+    backgroundColor: 'white',
+  },
+  eventDetailContent: {
+    padding: 10,
+  },
+  eventDetailTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginBottom: 10,
+  },
+  eventDetailText: {
+    fontSize: 16,
     marginBottom: 8,
   },
-  eventDetail: {
-    flexDirection: 'row',
+  backButton: {
+    padding: 10,
+    marginBottom: 10,
+  },
+  backButtonText: {
+    fontSize: 16,
+    color: '#2563eb',
+  },
+  actionButton: {
+    padding: 12,
+    borderRadius: 6,
     alignItems: 'center',
-    marginBottom: 6,
+    marginTop: 15,
   },
-  eventIcon: {
-    marginRight: 8,
+  registerButton: {
+    backgroundColor: '#2563eb',
   },
-  eventAttendees: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  cancelButton: {
+    backgroundColor: '#dc2626',
   },
-  noEvents: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 32,
-    backgroundColor: '#f9fafb',
-    borderRadius: 8,
+  actionButtonText: {
+    color: 'white',
+    fontWeight: 'bold',
   },
-  noEventsText: {
-    color: '#6b7280',
-    textAlign: 'center',
+  registeredBadge: {
+    color: 'green',
+    fontWeight: 'bold',
+    marginTop: 5,
   },
 });
 

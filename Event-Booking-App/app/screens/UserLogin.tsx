@@ -16,7 +16,7 @@ const UserLogin = ({ navigation }: UserLoginProps) => {
   const [password, setPassword] = useState('');
 
   const handleLogin = () => {
-    if (email === 'user@example.com' && password === 'user123') {
+    if (email === 'user' && password === 'user123') {
       navigation.navigate('EventPlanner');
       
     } else {

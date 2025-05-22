@@ -4,11 +4,11 @@ import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from 'reac
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 
 type RootStackParamList = {
-  EventPlanner: undefined;
+  AdminDashboard: undefined;
 };
 
 type AdminLoginProps = {
-  navigation: NativeStackNavigationProp<RootStackParamList, 'EventPlanner'>;
+  navigation: NativeStackNavigationProp<RootStackParamList, 'AdminDashboard'>;
 };
 
 const AdminLogin = ({ navigation }: AdminLoginProps) => {
@@ -17,7 +17,7 @@ const AdminLogin = ({ navigation }: AdminLoginProps) => {
 
   const handleLogin = () => {
     if (username === 'admin' && password === 'admin123') {
-      navigation.navigate('EventPlanner');
+      navigation.navigate('AdminDashboard');
     } else {
       Alert.alert('Login Failed', 'Invalid admin credentials.');
     }
