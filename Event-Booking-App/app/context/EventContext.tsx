@@ -37,7 +37,7 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         console.error('Failed to load events:', error);
       }
     };
-    
+
     loadEvents();
   }, []);
 
@@ -50,7 +50,7 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         console.error('Failed to save events:', error);
       }
     };
-    
+
     saveEvents();
   }, [events]);
 
@@ -63,7 +63,7 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
 
   const updateEvent = (updatedEvent: Event) => {
-    setEvents(events.map(event => 
+    setEvents(events.map(event =>
       event.id === updatedEvent.id ? updatedEvent : event
     ));
   };
@@ -84,4 +84,5 @@ export const useEvent = () => {
   if (context === undefined) {
     throw new Error('useEvent must be used within an EventProvider');
   }
-}
+  return context;
+};

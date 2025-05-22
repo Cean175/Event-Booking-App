@@ -12,6 +12,7 @@ import EventPlanner from '../screens/EventPlanner';
 export type RootStackParamList = {
   AdminLogin: undefined;
   UserLogin: undefined;
+  EventPlanner: undefined;
   EventBooking: undefined;
   AdminDashboard: undefined;
   CreateEvent: undefined;
@@ -36,7 +37,7 @@ export default function StackNavigator() {
       />
       <Stack.Screen
         name="EventPlanner"
-        component={AdminDashboardScreen}
+        component={EventPlanner}
         options={{ title: 'Event Planner' }}
       />
       <Stack.Screen

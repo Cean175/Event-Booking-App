@@ -12,7 +12,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { useNavigation } from '@react-navigation/native';
 import { useEvent } from '../context/EventContext';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import type { RootStackParamList } from '../../navigation/StackNavigator';
+import type { RootStackParamList } from '../navigation/StackNavigator';
 import { v4 as uuidv4 } from 'uuid';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'CreateEvent'>;
