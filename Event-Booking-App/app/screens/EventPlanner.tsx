@@ -11,7 +11,7 @@ interface Event {
   title: string;
   description: string;
   location: string;
-  date: string; // Format: YYYY-MM-DD
+  date: string;
   startTime: string;
   endTime: string;
   duration?: string;
@@ -34,22 +34,81 @@ const EventPlanner: React.FC = () => {
   const [sortDropdownVisible, setSortDropdownVisible] = useState(false);
   const [registeringEvent, setRegisteringEvent] = useState<Event | null>(null);
   const [emailInput, setEmailInput] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  // Email validation function
+  const validateEmail = (email: string): boolean => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email.trim());
+  };
+
+  // Date validation function
+  const isValidDate = (dateString: string): boolean => {
+    try {
+      const date = new Date(dateString);
+      return date instanceof Date && !isNaN(date.getTime());
+    } catch {
+      return false;
+    }
+  };
+
+  // Time validation function
+  const isValidTime = (timeString: string): boolean => {
+    const timeRegex = /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/;
+    return timeRegex.test(timeString);
+  };
+
+  // Validate event data
+  const validateEvent = (event: any): event is Event => {
+    if (!event || typeof event !== 'object') return false;
+    
+    return (
+      typeof event.id === 'string' &&
+      typeof event.title === 'string' &&
+      typeof event.description === 'string' &&
+      typeof event.location === 'string' &&
+      typeof event.date === 'string' &&
+      isValidDate(event.date) &&
+      typeof event.startTime === 'string' &&
+      isValidTime(event.startTime) &&
+      typeof event.endTime === 'string' &&
+      isValidTime(event.endTime)
+    );
+  };
 
   useEffect(() => {
     const loadEvents = async () => {
       try {
+        setLoading(true);
         const storedEvents = await AsyncStorage.getItem('events');
         if (storedEvents) {
-          const parsed: Event[] = JSON.parse(storedEvents);
-          const withAttendees = parsed.map(ev => ({
-            ...ev,
-            attendees: ev.attendees || 0,
-            registered: ev.registered || false
-          }));
-          setEvents(sortEvents(withAttendees, sortMode, sortDirection));
+          const parsed = JSON.parse(storedEvents);
+          
+          
+          if (!Array.isArray(parsed)) {
+            console.error('Invalid events data format');
+            setEvents([]);
+            return;
+          }
+
+          
+          const validEvents: Event[] = parsed
+            .filter(validateEvent)
+            .map(ev => ({
+              ...ev,
+              attendees: typeof ev.attendees === 'number' ? Math.max(0, ev.attendees) : 0,
+              registered: typeof ev.registered === 'boolean' ? ev.registered : false,
+              isFavorite: typeof ev.isFavorite === 'boolean' ? ev.isFavorite : false
+            }));
+
+          setEvents(sortEvents(validEvents, sortMode, sortDirection));
         }
       } catch (error) {
         console.error('Failed to load events:', error);
+        Alert.alert('Error', 'Failed to load events. Please try again.');
+        setEvents([]);
+      } finally {
+        setLoading(false);
       }
     };
 
@@ -57,23 +116,51 @@ const EventPlanner: React.FC = () => {
   }, []);
 
   const sortEvents = (events: Event[], mode: 'date' | 'duration', direction: 'asc' | 'desc') => {
-    return [...events].sort((a, b) => {
-      let comparison = 0;
-      
-      if (mode === 'date') {
-        comparison = new Date(a.date).getTime() - new Date(b.date).getTime();
-      } else {
-        const getMinutes = (t: string) => {
-          const [h, m] = t.split(':').map(Number);
-          return h * 60 + m;
-        };
-        const durationA = getMinutes(a.endTime) - getMinutes(a.startTime);
-        const durationB = getMinutes(b.endTime) - getMinutes(b.startTime);
-        comparison = durationA - durationB;
-      }
-      
-      return direction === 'asc' ? comparison : -comparison;
-    });
+    try {
+      return [...events].sort((a, b) => {
+        let comparison = 0;
+        
+        if (mode === 'date') {
+          const dateA = new Date(a.date);
+          const dateB = new Date(b.date);
+          
+          
+          if (isNaN(dateA.getTime()) || isNaN(dateB.getTime())) {
+            return 0;
+          }
+          
+          comparison = dateA.getTime() - dateB.getTime();
+        } else {
+          const getMinutes = (timeStr: string): number => {
+            try {
+              const [h, m] = timeStr.split(':').map(Number);
+              if (isNaN(h) || isNaN(m)) return 0;
+              return h * 60 + m;
+            } catch {
+              return 0;
+            }
+          };
+          
+          const durationA = getMinutes(a.endTime) - getMinutes(a.startTime);
+          const durationB = getMinutes(b.endTime) - getMinutes(b.startTime);
+          comparison = durationA - durationB;
+        }
+        
+        return direction === 'asc' ? comparison : -comparison;
+      });
+    } catch (error) {
+      console.error('Error sorting events:', error);
+      return events;
+    }
+  };
+
+  const saveEventsToStorage = async (updatedEvents: Event[]) => {
+    try {
+      await AsyncStorage.setItem('events', JSON.stringify(updatedEvents));
+    } catch (error) {
+      console.error('Failed to save events:', error);
+      Alert.alert('Error', 'Failed to save changes. Please try again.');
+    }
   };
 
   const toggleSidebar = () => setSidebarVisible(!sidebarVisible);
@@ -91,24 +178,43 @@ const EventPlanner: React.FC = () => {
   };
 
   const toggleFavorite = async (id: string) => {
-    const updated = events.map(ev =>
-      ev.id === id ? { ...ev, isFavorite: !ev.isFavorite } : ev
-    );
-    setEvents(updated);
-    await AsyncStorage.setItem('events', JSON.stringify(updated));
+    if (!id || typeof id !== 'string') {
+      Alert.alert('Error', 'Invalid event ID');
+      return;
+    }
+
+    try {
+      const updated = events.map(ev =>
+        ev.id === id ? { ...ev, isFavorite: !ev.isFavorite } : ev
+      );
+      setEvents(updated);
+      await saveEventsToStorage(updated);
+    } catch (error) {
+      console.error('Error toggling favorite:', error);
+      Alert.alert('Error', 'Failed to update favorite status');
+    }
   };
 
   const handleSortOptionSelect = (mode: 'date' | 'duration') => {
-    const newDirection = sortMode === mode ? 
-      (sortDirection === 'asc' ? 'desc' : 'asc') : 'asc';
-    
-    setSortMode(mode);
-    setSortDirection(newDirection);
-    setEvents(sortEvents(events, mode, newDirection));
-    setSortDropdownVisible(false);
+    try {
+      const newDirection = sortMode === mode ? 
+        (sortDirection === 'asc' ? 'desc' : 'asc') : 'asc';
+      
+      setSortMode(mode);
+      setSortDirection(newDirection);
+      setEvents(sortEvents(events, mode, newDirection));
+      setSortDropdownVisible(false);
+    } catch (error) {
+      console.error('Error sorting events:', error);
+      Alert.alert('Error', 'Failed to sort events');
+    }
   };
 
   const openEventDetails = (event: Event) => {
+    if (!event || !validateEvent(event)) {
+      Alert.alert('Error', 'Invalid event data');
+      return;
+    }
     setSelectedEvent(event);
   };
 
@@ -117,61 +223,117 @@ const EventPlanner: React.FC = () => {
   };
 
   const openRegister = (event: Event) => {
+    if (!event || !validateEvent(event)) {
+      Alert.alert('Error', 'Invalid event data');
+      return;
+    }
     setRegisteringEvent(event);
     setEmailInput('');
   };
 
   const handleRegister = async () => {
-    if (!emailInput) return Alert.alert("Error", "Please enter your email.");
-    const updated = events.map(ev =>
-      ev.id === registeringEvent?.id
-        ? { 
-            ...ev, 
-            attendees: (ev.attendees || 0) + 1,
-            registered: true
-          }
-        : ev
-    );
-    setEvents(updated);
-    await AsyncStorage.setItem('events', JSON.stringify(updated));
-    Alert.alert("Success", "You are registered!");
-    setRegisteringEvent(null);
-    if (selectedEvent) {
-      setSelectedEvent({
-        ...selectedEvent,
-        attendees: (selectedEvent.attendees || 0) + 1,
-        registered: true
-      });
+    
+    const trimmedEmail = emailInput.trim();
+    if (!trimmedEmail) {
+      Alert.alert("Error", "Please enter your email address.");
+      return;
+    }
+
+    if (!validateEmail(trimmedEmail)) {
+      Alert.alert("Error", "Please enter a valid email address.");
+      return;
+    }
+
+    if (!registeringEvent) {
+      Alert.alert("Error", "No event selected for registration.");
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const updated = events.map(ev =>
+        ev.id === registeringEvent.id
+          ? { 
+              ...ev, 
+              attendees: Math.max(0, (ev.attendees || 0) + 1),
+              registered: true
+            }
+          : ev
+      );
+      
+      setEvents(updated);
+      await saveEventsToStorage(updated);
+      
+      
+      if (selectedEvent?.id === registeringEvent.id) {
+        setSelectedEvent({
+          ...selectedEvent,
+          attendees: Math.max(0, (selectedEvent.attendees || 0) + 1),
+          registered: true
+        });
+      }
+      
+      Alert.alert("Success", "You have been successfully registered!");
+      setRegisteringEvent(null);
+      setEmailInput('');
+    } catch (error) {
+      console.error('Error registering for event:', error);
+      Alert.alert("Error", "Failed to register for event. Please try again.");
+    } finally {
+      setLoading(false);
     }
   };
 
   const handleCancelRegistration = async (eventId: string) => {
-    const updated = events.map(ev =>
-      ev.id === eventId
-        ? { 
-            ...ev, 
-            attendees: Math.max((ev.attendees || 0) - 1, 0),
-            registered: false
-          }
-        : ev
-    );
-    setEvents(updated);
-    await AsyncStorage.setItem('events', JSON.stringify(updated));
-    Alert.alert("Success", "Registration canceled!");
-    if (selectedEvent?.id === eventId) {
-      setSelectedEvent({
-        ...selectedEvent,
-        attendees: Math.max((selectedEvent.attendees || 0) - 1, 0),
-        registered: false
-      });
+    if (!eventId || typeof eventId !== 'string') {
+      Alert.alert('Error', 'Invalid event ID');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const updated = events.map(ev =>
+        ev.id === eventId
+          ? { 
+              ...ev, 
+              attendees: Math.max(0, (ev.attendees || 0) - 1),
+              registered: false
+            }
+          : ev
+      );
+      
+      setEvents(updated);
+      await saveEventsToStorage(updated);
+      
+      if (selectedEvent?.id === eventId) {
+        setSelectedEvent({
+          ...selectedEvent,
+          attendees: Math.max(0, (selectedEvent.attendees || 0) - 1),
+          registered: false
+        });
+      }
+      
+      Alert.alert("Success", "Registration has been canceled!");
+    } catch (error) {
+      console.error('Error canceling registration:', error);
+      Alert.alert("Error", "Failed to cancel registration. Please try again.");
+    } finally {
+      setLoading(false);
     }
   };
 
-  const filteredEvents = viewMode === 'saved'
-    ? events.filter(e => e.isFavorite)
-    : viewMode === 'registered'
-    ? events.filter(e => e.registered)
-    : events;
+  const filteredEvents = React.useMemo(() => {
+    try {
+      return viewMode === 'saved'
+        ? events.filter(e => e.isFavorite === true)
+        : viewMode === 'registered'
+        ? events.filter(e => e.registered === true)
+        : events;
+    } catch (error) {
+      console.error('Error filtering events:', error);
+      return events;
+    }
+  }, [events, viewMode]);
 
   const getSortButtonText = () => {
     const modeText = sortMode === 'date' ? 'Date' : 'Duration';
@@ -179,24 +341,50 @@ const EventPlanner: React.FC = () => {
     return `Sort: ${modeText} ${directionText}`;
   };
 
+  const formatDate = (dateString: string): string => {
+    try {
+      if (!isValidDate(dateString)) return dateString;
+      return new Date(dateString).toLocaleDateString();
+    } catch {
+      return dateString;
+    }
+  };
+
+  const formatDateTime = (dateTimeString: string): string => {
+    try {
+      if (!dateTimeString) return 'N/A';
+      return new Date(dateTimeString).toLocaleString();
+    } catch {
+      return dateTimeString;
+    }
+  };
+
+  if (loading) {
+    return (
+      <View style={[styles.container, styles.centerContent]}>
+        <Text>Loading...</Text>
+      </View>
+    );
+  }
+
   return (
     <View style={styles.container}>
       <Sidebar
-  visible={sidebarVisible}
-  onClose={() => setSidebarVisible(false)}
-  onViewSavedEvents={() => { 
-    setViewMode('saved'); 
-    setSidebarVisible(false); 
-  }}
-  onViewRegisteredEvents={() => { 
-    setViewMode('registered'); 
-    setSidebarVisible(false); 
-  }}
-  onViewAllEvents={() => { 
-    setViewMode('all'); 
-    setSidebarVisible(false); 
-  }}
-/>
+        visible={sidebarVisible}
+        onClose={() => setSidebarVisible(false)}
+        onViewSavedEvents={() => { 
+          setViewMode('saved'); 
+          setSidebarVisible(false); 
+        }}
+        onViewRegisteredEvents={() => { 
+          setViewMode('registered'); 
+          setSidebarVisible(false); 
+        }}
+        onViewAllEvents={() => { 
+          setViewMode('all'); 
+          setSidebarVisible(false); 
+        }}
+      />
 
       <View style={styles.header}>
         <TouchableOpacity onPress={toggleSidebar} style={styles.menuButton}>
@@ -247,14 +435,20 @@ const EventPlanner: React.FC = () => {
           </TouchableOpacity>
           
           <ScrollView style={styles.eventDetailContent}>
-            <Text style={styles.eventDetailTitle}>{selectedEvent.title}</Text>
-            <Text style={styles.eventDetailText}>Date: {selectedEvent.date}</Text>
-            <Text style={styles.eventDetailText}>Time: {selectedEvent.startTime} - {selectedEvent.endTime}</Text>
-            {selectedEvent.attendees !== undefined && (
-              <Text style={styles.eventDetailText}>Attendees: {selectedEvent.attendees}</Text>
-            )}
-            <Text style={styles.eventDetailText}>Description: {selectedEvent.description}</Text>
-            <Text style={styles.eventDetailText}>Location: {selectedEvent.location}</Text>
+            <Text style={styles.eventDetailTitle}>{selectedEvent.title || 'Untitled Event'}</Text>
+            <Text style={styles.eventDetailText}>Date: {formatDate(selectedEvent.date)}</Text>
+            <Text style={styles.eventDetailText}>
+              Time: {selectedEvent.startTime || 'N/A'} - {selectedEvent.endTime || 'N/A'}
+            </Text>
+            <Text style={styles.eventDetailText}>
+              Attendees: {typeof selectedEvent.attendees === 'number' ? selectedEvent.attendees : 0}
+            </Text>
+            <Text style={styles.eventDetailText}>
+              Description: {selectedEvent.description || 'No description available'}
+            </Text>
+            <Text style={styles.eventDetailText}>
+              Location: {selectedEvent.location || 'Location not specified'}
+            </Text>
             {selectedEvent.duration && (
               <Text style={styles.eventDetailText}>Duration: {selectedEvent.duration}</Text>
             )}
@@ -265,7 +459,7 @@ const EventPlanner: React.FC = () => {
             )}
             {selectedEvent.createdAt && (
               <Text style={styles.eventDetailText}>
-                Created: {new Date(selectedEvent.createdAt).toLocaleString()}
+                Created: {formatDateTime(selectedEvent.createdAt)}
               </Text>
             )}
 
@@ -273,13 +467,17 @@ const EventPlanner: React.FC = () => {
               <TouchableOpacity
                 style={[styles.actionButton, styles.cancelButton]}
                 onPress={() => handleCancelRegistration(selectedEvent.id)}
+                disabled={loading}
               >
-                <Text style={styles.actionButtonText}>Cancel Registration</Text>
+                <Text style={styles.actionButtonText}>
+                  {loading ? 'Canceling...' : 'Cancel Registration'}
+                </Text>
               </TouchableOpacity>
             ) : (
               <TouchableOpacity
                 style={[styles.actionButton, styles.registerButton]}
                 onPress={() => openRegister(selectedEvent)}
+                disabled={loading}
               >
                 <Text style={styles.actionButtonText}>Register</Text>
               </TouchableOpacity>
@@ -288,6 +486,7 @@ const EventPlanner: React.FC = () => {
             <TouchableOpacity
               onPress={() => toggleFavorite(selectedEvent.id)}
               style={styles.heartButton}
+              disabled={loading}
             >
               <Text style={{ fontSize: 24 }}>
                 {selectedEvent.isFavorite ? '❤️' : '🤍'}
@@ -312,12 +511,12 @@ const EventPlanner: React.FC = () => {
                 style={styles.eventCard}
                 onPress={() => openEventDetails(event)}
               >
-                <Text style={styles.eventTitle}>{event.title}</Text>
-                <Text>Date: {event.date}</Text>
-                <Text>Time: {event.startTime} - {event.endTime}</Text>
-                {event.attendees !== undefined && (
-                  <Text>Attendees: {event.attendees}</Text>
-                )}
+                <Text style={styles.eventTitle}>{event.title || 'Untitled Event'}</Text>
+                <Text>Date: {formatDate(event.date)}</Text>
+                <Text>Time: {event.startTime || 'N/A'} - {event.endTime || 'N/A'}</Text>
+                <Text>
+                  Attendees: {typeof event.attendees === 'number' ? event.attendees : 0}
+                </Text>
                 {event.registered && (
                   <Text style={styles.registeredBadge}>Registered</Text>
                 )}
@@ -327,6 +526,7 @@ const EventPlanner: React.FC = () => {
                     toggleFavorite(event.id);
                   }}
                   style={styles.heartButton}
+                  disabled={loading}
                 >
                   <Text style={{ fontSize: 18 }}>
                     {event.isFavorite ? '❤️' : '🤍'}
@@ -338,26 +538,43 @@ const EventPlanner: React.FC = () => {
         </ScrollView>
       )}
 
-      <Modal visible={!!registeringEvent} transparent>
+      <Modal visible={!!registeringEvent} transparent animationType="slide">
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
-            <Text style={{ marginBottom: 10 }}>Enter your email:</Text>
+            <Text style={styles.modalTitle}>Register for Event</Text>
+            <Text style={styles.modalSubtitle}>
+              {registeringEvent?.title || 'Event Registration'}
+            </Text>
+            <Text style={{ marginBottom: 10 }}>Enter your email address:</Text>
             <TextInput
-              placeholder="Email"
+              placeholder="example@email.com"
               value={emailInput}
               onChangeText={setEmailInput}
               style={styles.input}
               keyboardType="email-address"
+              autoCapitalize="none"
+              autoCorrect={false}
+              editable={!loading}
             />
-            <View style={{ flexDirection: 'row', gap: 10 }}>
-              <TouchableOpacity style={styles.modalBtn} onPress={handleRegister}>
-                <Text style={{ color: 'white' }}>Register</Text>
+            <View style={styles.modalButtonContainer}>
+              <TouchableOpacity 
+                style={[styles.modalBtn, loading && styles.disabledButton]} 
+                onPress={handleRegister}
+                disabled={loading}
+              >
+                <Text style={styles.modalBtnText}>
+                  {loading ? 'Registering...' : 'Register'}
+                </Text>
               </TouchableOpacity>
               <TouchableOpacity 
-                style={[styles.modalBtn, { backgroundColor: 'gray' }]} 
-                onPress={() => setRegisteringEvent(null)}
+                style={[styles.modalBtn, styles.cancelModalBtn]} 
+                onPress={() => {
+                  setRegisteringEvent(null);
+                  setEmailInput('');
+                }}
+                disabled={loading}
               >
-                <Text style={{ color: 'white' }}>Cancel</Text>
+                <Text style={styles.modalBtnText}>Cancel</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -369,6 +586,7 @@ const EventPlanner: React.FC = () => {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#f3f4f6' },
+  centerContent: { justifyContent: 'center', alignItems: 'center' },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -430,6 +648,18 @@ const styles = StyleSheet.create({
     padding: 20,
     gap: 10
   },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    marginBottom: 5,
+  },
+  modalSubtitle: {
+    fontSize: 16,
+    textAlign: 'center',
+    color: '#666',
+    marginBottom: 15,
+  },
   input: {
     borderWidth: 1,
     borderColor: '#ccc',
@@ -437,12 +667,26 @@ const styles = StyleSheet.create({
     padding: 8,
     marginBottom: 10,
   },
+  modalButtonContainer: {
+    flexDirection: 'row',
+    gap: 10,
+  },
   modalBtn: {
     flex: 1,
     backgroundColor: '#2563eb',
     padding: 10,
     borderRadius: 6,
     alignItems: 'center',
+  },
+  cancelModalBtn: {
+    backgroundColor: '#6b7280',
+  },
+  modalBtnText: {
+    color: 'white',
+    fontWeight: 'bold',
+  },
+  disabledButton: {
+    backgroundColor: '#9ca3af',
   },
   sortContainer: {
     position: 'relative',
@@ -515,6 +759,5 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginTop: 5,
   },
-});
 
-export default EventPlanner;
+  export EventPlanner;
