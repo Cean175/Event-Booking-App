@@ -192,20 +192,23 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginBottom: 8,
     marginTop: 20,
+    color: '#333', // dark text for readability
   },
   input: {
     borderBottomWidth: 1,
+    borderBottomColor: '#F7DC6F', // sunny accent
     marginBottom: 20,
     fontSize: 16,
   },
   textarea: {
     borderBottomWidth: 1,
+    borderBottomColor: '#F7DC6F',
     marginTop: 10,
     marginBottom: 20,
     fontSize: 16,
   },
   button: {
-    backgroundColor: '#007bff',
+    backgroundColor: '#F7DC6F', // primary theme color
     paddingVertical: 8,
     paddingHorizontal: 14,
     borderRadius: 20,
@@ -213,7 +216,7 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   smallButton: {
-    backgroundColor: '#28a745',
+    backgroundColor: '#F4A261', // warm orange
     paddingVertical: 8,
     paddingHorizontal: 12,
     borderRadius: 20,
@@ -222,22 +225,25 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   submitButton: {
-    backgroundColor: '#343a40',
+    backgroundColor: '#E76F51', // coral red
     paddingVertical: 12,
     borderRadius: 25,
     alignItems: 'center',
   },
   buttonText: {
-    color: '#fff',
+    color: '#333', // better contrast on yellow
+    fontWeight: 'bold',
   },
   infoText: {
     marginVertical: 6,
     fontSize: 14,
+    color: '#555',
   },
   durationText: {
     fontStyle: 'italic',
     marginBottom: 10,
     fontSize: 15,
+    color: '#6B8E23', // olive green for subtle emphasis
   },
   row: {
     flexDirection: 'row',

@@ -122,7 +122,7 @@ const AdminDashboardScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: 'white',
+    backgroundColor: '#FFF9E3',
   },
   overlay: {
     position: 'absolute',
@@ -139,18 +139,18 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     width: '70%',
-    backgroundColor: '#1e40af',
+    backgroundColor: '#fff4cb',
     paddingTop: 50,
     zIndex: 2,
   },
   sidebarHeader: {
     padding: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#3b82f6',
+    borderBottomColor: '#E5C15E',
     marginBottom: 20,
   },
   sidebarTitle: {
-    color: 'white',
+    color: '#333333', 
     fontSize: 20,
     fontWeight: 'bold',
   },
@@ -159,12 +159,13 @@ const styles = StyleSheet.create({
     marginHorizontal: 10,
     marginVertical: 5,
     borderRadius: 5,
+    backgroundColor: '#FFFFFF',
   },
   activeSidebarButton: {
-    backgroundColor: '#3b82f6',
+    backgroundColor: '#E76F51',
   },
   sidebarButtonText: {
-    color: 'white',
+    color: '#333333',
     fontSize: 16,
   },
   logoutButton: {
@@ -172,13 +173,13 @@ const styles = StyleSheet.create({
     bottom: 30,
     left: 20,
     right: 20,
-    backgroundColor: '#ef4444',
+    backgroundColor: '#E76F51',
     padding: 15,
     borderRadius: 5,
     alignItems: 'center',
   },
   logoutButtonText: {
-    color: 'white',
+    color: '#FFFFFF',
     fontWeight: 'bold',
   },
   mainContent: {
@@ -194,7 +195,7 @@ const styles = StyleSheet.create({
   },
   menuButtonText: {
     fontSize: 24,
-    color: '#1e40af',
+    color: '#B8860B',
   },
   content: {
     flex: 1,
@@ -202,5 +203,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
 });
+
 
 export default AdminDashboardScreen;
