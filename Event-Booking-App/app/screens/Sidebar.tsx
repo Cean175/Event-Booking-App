@@ -101,7 +101,7 @@ const Sidebar: React.FC<SidebarProps> = ({
         
         <TouchableOpacity 
           style={styles.menuItem} 
-          onPress={() => {
+          onPress={() => {  
             onViewRegisteredEvents();
             onClose();
           }}

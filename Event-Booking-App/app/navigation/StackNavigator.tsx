@@ -38,7 +38,7 @@ export default function StackNavigator() {
       <Stack.Screen
         name="EventPlanner"
         component={EventPlanner}
-        options={{ title: 'Event Planner' }}
+        options={{ title: 'Event Plan' }}
       />
       <Stack.Screen
         name="EventBooking"

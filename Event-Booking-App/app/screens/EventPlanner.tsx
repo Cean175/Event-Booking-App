@@ -202,7 +202,7 @@ const EventPlanner: React.FC = () => {
         <TouchableOpacity onPress={toggleSidebar} style={styles.menuButton}>
           <Text style={styles.menuButtonText}>☰</Text>
         </TouchableOpacity>
-        <Text style={styles.appTitle}>Event Management Planner</Text>
+        <Text style={styles.appTitle}>Current Events</Text>
         <View style={styles.sortContainer}>
           <TouchableOpacity 
             onPress={() => setSortDropdownVisible(!sortDropdownVisible)}
@@ -231,9 +231,6 @@ const EventPlanner: React.FC = () => {
 
       {viewMode !== 'all' && (
         <View style={styles.viewModeHeader}>
-          <TouchableOpacity onPress={() => setViewMode('all')}>
-            <Text>← Back</Text>
-          </TouchableOpacity>
           <Text style={styles.viewModeTitle}>
             {viewMode === 'saved' ? 'Saved Events' : 'Registered Events'}
           </Text>

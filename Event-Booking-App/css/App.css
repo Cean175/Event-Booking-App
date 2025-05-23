@@ -1,13 +1,46 @@
+import React from 'react';
+import { StyleSheet, View, Text } from 'react-native';
+import { useFonts, Poppins_700Bold } from '@expo-google-fonts/poppins';
+import { Nunito_400Regular, Nunito_600SemiBold } from '@expo-google-fonts/nunito';
+import AppLoading from 'expo-app-loading';
 
-body {
-    margin: 0;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
-    background-color: #f3f4f6;
-    color: #333;
-    line-height: 1.5;
+export default function App() {
+  const [fontsLoaded] = useFonts({
+    Poppins_700Bold,
+    Nunito_400Regular,
+    Nunito_600SemiBold,
+  });
+
+  if (!fontsLoaded) {
+    return <AppLoading />;
   }
-  
-  .app-container {
-    min-height: 100vh;
-    padding: 20px;
-  }
+
+  return (
+    <View style={styles.appContainer}>
+      <Text style={styles.title}>Event Booking</Text>
+      <Text style={styles.body}>Welcome to your warm and sunny event app!</Text>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  appContainer: {
+    flex: 1,
+    padding: 20,
+    backgroundColor: '#FFF9E3', // Light sunny background
+    justifyContent: 'center',
+  },
+  title: {
+    fontFamily: 'Poppins_700Bold',
+    fontSize: 40,
+    color: '#B8860B',
+    marginBottom: 20,
+    textAlign: 'center',
+  },
+  body: {
+    fontFamily: 'Nunito_400Regular',
+    fontSize: 18,
+    color: '#333',
+    textAlign: 'center',
+  },
+});
