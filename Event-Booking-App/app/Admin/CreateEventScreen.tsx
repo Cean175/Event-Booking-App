@@ -75,6 +75,7 @@ export default function CreateEventScreen() {
       startTime: eventStart.toLocaleTimeString(),
       endTime: eventEnd.toLocaleTimeString(),
       duration: getDurationText(),
+      attendees: [], 
     });
 
     Alert.alert('Event Added!');

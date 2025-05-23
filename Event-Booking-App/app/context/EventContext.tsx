@@ -11,6 +11,7 @@ interface Event {
   startTime: string;
   endTime: string;
   duration?: string;
+  attendees: number[];
 }
 
 interface EventContextType {

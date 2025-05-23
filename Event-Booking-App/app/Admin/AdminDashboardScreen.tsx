@@ -1,39 +1,119 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { 
+  View, 
+  Text, 
+  TouchableOpacity, 
+  StyleSheet, 
+  Animated, 
+  Dimensions,
+  Alert
+} from 'react-native';
 import CreateEventScreen from '../Admin/CreateEventScreen';
 import EventListScreen from '../Admin/EventListScreen';
-
+import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import type { RootStackParamList } from '../navigation/StackNavigator';
 const AdminDashboardScreen = () => {
   const [activeTab, setActiveTab] = useState<'create' | 'list'>('create');
+  const [sidebarVisible, setSidebarVisible] = useState(false);
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const screenWidth = Dimensions.get('window').width;
+  const translateX = React.useRef(new Animated.Value(-screenWidth)).current;
+
+  React.useEffect(() => {
+    Animated.timing(translateX, {
+      toValue: sidebarVisible ? 0 : -screenWidth,
+      duration: 300,
+      useNativeDriver: true,
+    }).start();
+  }, [sidebarVisible, screenWidth]);
+
+  const handleLogout = () => {
+    Alert.alert(
+      "Logout",
+      "Are you sure you want to logout?",
+      [
+        {
+          text: "Cancel",
+          style: "cancel"
+        },
+        { 
+          text: "Logout", 
+          style: "destructive",
+          onPress: () => {
+            setSidebarVisible(false);
+            navigation.navigate('EventBooking');
+          }
+        }
+      ]
+    );
+  };
 
   return (
     <View style={styles.container}>
-      {/* Tab Buttons */}
-      <View style={styles.tabContainer}>
+      {/* Sidebar Overlay */}
+      {sidebarVisible && (
+        <TouchableOpacity 
+          style={styles.overlay}
+          onPress={() => setSidebarVisible(false)}
+          activeOpacity={1}
+        />
+      )}
+
+      {/* Sidebar */}
+      <Animated.View style={[styles.sidebar, { transform: [{ translateX }] }]}>
+        <View style={styles.sidebarHeader}>
+          <Text style={styles.sidebarTitle}>Admin Dashboard</Text>
+        </View>
+
         <TouchableOpacity
-          onPress={() => setActiveTab('create')}
+          onPress={() => {
+            setActiveTab('create');
+            setSidebarVisible(false);
+          }}
           style={[
-            styles.tabButton,
-            activeTab === 'create' ? styles.activeTab : styles.inactiveTab,
+            styles.sidebarButton,
+            activeTab === 'create' && styles.activeSidebarButton
           ]}
         >
-          <Text style={styles.tabButtonText}>Create Event</Text>
+          <Text style={styles.sidebarButtonText}>Create Event</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
-          onPress={() => setActiveTab('list')}
+          onPress={() => {
+            setActiveTab('list');
+            setSidebarVisible(false);
+          }}
           style={[
-            styles.tabButton,
-            activeTab === 'list' ? styles.activeTab : styles.inactiveTab,
+            styles.sidebarButton,
+            activeTab === 'list' && styles.activeSidebarButton
           ]}
         >
-          <Text style={styles.tabButtonText}>View Events</Text>
+          <Text style={styles.sidebarButtonText}>View Events</Text>
         </TouchableOpacity>
-      </View>
 
-      {/* Content */}
-      <View style={styles.content}>
-        {activeTab === 'create' ? <CreateEventScreen /> : <EventListScreen />}
+        <TouchableOpacity
+          onPress={handleLogout}
+          style={styles.logoutButton}
+        >
+          <Text style={styles.logoutButtonText}>Logout</Text>
+        </TouchableOpacity>
+      </Animated.View>
+
+      {/* Main Content */}
+      <View style={styles.mainContent}>
+        {/* Menu Button */}
+        <TouchableOpacity 
+          onPress={() => setSidebarVisible(true)}
+          style={styles.menuButton}
+        >
+          <Text style={styles.menuButtonText}>☰</Text>
+        </TouchableOpacity>
+
+        {/* Content */}
+        <View style={styles.content}>
+          {activeTab === 'create' ? <CreateEventScreen /> : <EventListScreen />}
+        </View>
       </View>
     </View>
   );
@@ -43,30 +123,83 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: 'white',
-    padding: 16,
   },
-  tabContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    marginBottom: 16,
+  overlay: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: 'rgba(0,0,0,0.3)',
+    zIndex: 1,
   },
-  tabButton: {
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 9999, 
+  sidebar: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    left: 0,
+    width: '70%',
+    backgroundColor: '#1e40af',
+    paddingTop: 50,
+    zIndex: 2,
   },
-  activeTab: {
-    backgroundColor: '#3b82f6', 
+  sidebarHeader: {
+    padding: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#3b82f6',
+    marginBottom: 20,
   },
-  inactiveTab: {
-    backgroundColor: '#d1d5db',
-  },
-  tabButtonText: {
+  sidebarTitle: {
     color: 'white',
-    fontWeight: '600',
+    fontSize: 20,
+    fontWeight: 'bold',
+  },
+  sidebarButton: {
+    padding: 15,
+    marginHorizontal: 10,
+    marginVertical: 5,
+    borderRadius: 5,
+  },
+  activeSidebarButton: {
+    backgroundColor: '#3b82f6',
+  },
+  sidebarButtonText: {
+    color: 'white',
+    fontSize: 16,
+  },
+  logoutButton: {
+    position: 'absolute',
+    bottom: 30,
+    left: 20,
+    right: 20,
+    backgroundColor: '#ef4444',
+    padding: 15,
+    borderRadius: 5,
+    alignItems: 'center',
+  },
+  logoutButtonText: {
+    color: 'white',
+    fontWeight: 'bold',
+  },
+  mainContent: {
+    flex: 1,
+    zIndex: 0,
+  },
+  menuButton: {
+    position: 'absolute',
+    top: 10,
+    left: 10,
+    zIndex: 1,
+    padding: 10,
+  },
+  menuButtonText: {
+    fontSize: 24,
+    color: '#1e40af',
   },
   content: {
     flex: 1,
+    paddingTop: 50,
+    paddingHorizontal: 16,
   },
 });
 

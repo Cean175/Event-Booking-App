@@ -54,27 +54,32 @@ const EventPlanner: React.FC = () => {
     };
 
     loadEvents();
-  }, []);
+  }, [sortMode, sortDirection]);
 
   const sortEvents = (events: Event[], mode: 'date' | 'duration', direction: 'asc' | 'desc') => {
-    return [...events].sort((a, b) => {
-      let comparison = 0;
-      
-      if (mode === 'date') {
-        comparison = new Date(a.date).getTime() - new Date(b.date).getTime();
-      } else {
-        const getMinutes = (t: string) => {
-          const [h, m] = t.split(':').map(Number);
-          return h * 60 + m;
-        };
-        const durationA = getMinutes(a.endTime) - getMinutes(a.startTime);
-        const durationB = getMinutes(b.endTime) - getMinutes(b.startTime);
-        comparison = durationA - durationB;
-      }
-      
-      return direction === 'asc' ? comparison : -comparison;
-    });
-  };
+  return [...events].sort((a, b) => {
+    let comparison = 0;
+    
+    if (mode === 'date') {
+      const dateA = new Date(a.date).getTime();
+      const dateB = new Date(b.date).getTime();
+      // Handle invalid dates by putting them at the end
+      if (isNaN(dateA)) return direction === 'asc' ? 1 : -1;
+      if (isNaN(dateB)) return direction === 'asc' ? -1 : 1;
+      comparison = dateA - dateB;
+    } else {
+      const getMinutes = (t: string) => {
+        const [h, m] = t.split(':').map(Number);
+        return h * 60 + m;
+      };
+      const durationA = getMinutes(a.endTime) - getMinutes(a.startTime);
+      const durationB = getMinutes(b.endTime) - getMinutes(b.startTime);
+      comparison = durationA - durationB;
+    }
+    
+    return direction === 'asc' ? comparison : -comparison;
+  });
+};
 
   const toggleSidebar = () => setSidebarVisible(!sidebarVisible);
 
@@ -96,6 +101,12 @@ const EventPlanner: React.FC = () => {
     );
     setEvents(updated);
     await AsyncStorage.setItem('events', JSON.stringify(updated));
+    if (selectedEvent && selectedEvent.id === id) {
+    setSelectedEvent({
+      ...selectedEvent,
+      isFavorite: !selectedEvent.isFavorite
+    });
+  }
   };
 
   const handleSortOptionSelect = (mode: 'date' | 'duration') => {
@@ -104,8 +115,12 @@ const EventPlanner: React.FC = () => {
     
     setSortMode(mode);
     setSortDirection(newDirection);
-    setEvents(sortEvents(events, mode, newDirection));
-    setSortDropdownVisible(false);
+    
+    const sortedEvents = sortEvents([...events], mode, newDirection);
+    setEvents(sortedEvents);
+  
+   setSortDropdownVisible(false);
+   
   };
 
   const openEventDetails = (event: Event) => {
@@ -122,28 +137,38 @@ const EventPlanner: React.FC = () => {
   };
 
   const handleRegister = async () => {
-    if (!emailInput) return Alert.alert("Error", "Please enter your email.");
-    const updated = events.map(ev =>
-      ev.id === registeringEvent?.id
-        ? { 
-            ...ev, 
-            attendees: (ev.attendees || 0) + 1,
-            registered: true
-          }
-        : ev
-    );
+  if (!emailInput.trim()) {
+    return Alert.alert("Error", "Please enter your email.");
+  }
+
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(emailInput)) {
+    return Alert.alert("Invalid Email", "Please enter a valid email address.");
+  }
+
+  const updated = events.map(ev =>
+    ev.id === registeringEvent?.id
+      ? { 
+          ...ev, 
+          attendees: (ev.attendees || 0) + 1,
+          registered: true
+        }
+      : ev
+  );
+
     setEvents(updated);
-    await AsyncStorage.setItem('events', JSON.stringify(updated));
-    Alert.alert("Success", "You are registered!");
-    setRegisteringEvent(null);
-    if (selectedEvent) {
-      setSelectedEvent({
-        ...selectedEvent,
-        attendees: (selectedEvent.attendees || 0) + 1,
-        registered: true
-      });
-    }
-  };
+  await AsyncStorage.setItem('events', JSON.stringify(updated));
+  Alert.alert("Success", "You are registered!");
+  setRegisteringEvent(null);
+
+  if (selectedEvent) {
+    setSelectedEvent({
+      ...selectedEvent,
+      attendees: (selectedEvent.attendees || 0) + 1,
+      registered: true
+    });
+  }
+};
 
   const handleCancelRegistration = async (eventId: string) => {
     const updated = events.map(ev =>
