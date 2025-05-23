@@ -15,12 +15,20 @@ const UserLogin = ({ navigation }: UserLoginProps) => {
   const [password, setPassword] = useState('');
 
   const handleLogin = () => {
-    if (email === 'user' && password === 'user123') {
-      navigation.navigate('EventPlanner');
-    } else {
-      Alert.alert('Login Failed', 'Invalid user credentials.');
-    }
-  };
+  // Check if email is valid and ends with @dlsl.edu.ph
+  const isValidEmail = email.endsWith('@dlsl.edu.ph');
+
+  if (!isValidEmail) {
+    Alert.alert('Invalid Email', 'Please enter a valid DLSL email address.');
+    return;
+  }
+
+  if (password === '1200014694WH') {
+    navigation.navigate('EventPlanner');
+  } else {
+    Alert.alert('Login Failed', 'Invalid user credentials.');
+  }
+};
 
   return (
     <View style={styles.container}>
