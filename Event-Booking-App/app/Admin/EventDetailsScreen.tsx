@@ -155,6 +155,8 @@ export default function EventDetailsScreen() {
             <Text style={{ fontSize: 16, marginTop: 10 }}>📅 Date: {event.date}</Text>
             <Text style={{ fontSize: 16 }}>🕒 Start: {event.startTime}</Text>
             <Text style={{ fontSize: 16 }}>🕔 End: {event.endTime}</Text>
+            <Text style={{ fontSize: 16, marginTop: 10 }}>👥 Attendees: {event.attendees?.length ?? 0}</Text>
+
 
             <Button title="Update" onPress={() => setIsEditing(true)} />
           </>

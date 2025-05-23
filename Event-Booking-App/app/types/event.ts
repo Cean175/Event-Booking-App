@@ -7,4 +7,5 @@ export type Event = {
   startTime: string;
   endTime: string;
   duration: string;
+  attendees: number[];
 };

@@ -137,28 +137,38 @@ const EventPlanner: React.FC = () => {
   };
 
   const handleRegister = async () => {
-    if (!emailInput) return Alert.alert("Error", "Please enter your email.");
-    const updated = events.map(ev =>
-      ev.id === registeringEvent?.id
-        ? { 
-            ...ev, 
-            attendees: (ev.attendees || 0) + 1,
-            registered: true
-          }
-        : ev
-    );
+  if (!emailInput.trim()) {
+    return Alert.alert("Error", "Please enter your email.");
+  }
+
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(emailInput)) {
+    return Alert.alert("Invalid Email", "Please enter a valid email address.");
+  }
+
+  const updated = events.map(ev =>
+    ev.id === registeringEvent?.id
+      ? { 
+          ...ev, 
+          attendees: (ev.attendees || 0) + 1,
+          registered: true
+        }
+      : ev
+  );
+
     setEvents(updated);
-    await AsyncStorage.setItem('events', JSON.stringify(updated));
-    Alert.alert("Success", "You are registered!");
-    setRegisteringEvent(null);
-    if (selectedEvent) {
-      setSelectedEvent({
-        ...selectedEvent,
-        attendees: (selectedEvent.attendees || 0) + 1,
-        registered: true
-      });
-    }
-  };
+  await AsyncStorage.setItem('events', JSON.stringify(updated));
+  Alert.alert("Success", "You are registered!");
+  setRegisteringEvent(null);
+
+  if (selectedEvent) {
+    setSelectedEvent({
+      ...selectedEvent,
+      attendees: (selectedEvent.attendees || 0) + 1,
+      registered: true
+    });
+  }
+};
 
   const handleCancelRegistration = async (eventId: string) => {
     const updated = events.map(ev =>
