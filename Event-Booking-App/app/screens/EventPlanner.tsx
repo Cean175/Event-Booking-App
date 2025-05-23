@@ -390,13 +390,13 @@ const EventPlanner: React.FC = () => {
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f3f4f6' },
+  container: { flex: 1, backgroundColor: '#FFF9E3' },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     padding: 10,
-    paddingTop: 50, 
-    backgroundColor: 'white',
+    paddingTop: 0,
+    backgroundColor: '#FFF9E3',
     alignItems: 'center',
     position: 'relative',
     zIndex: 10,
@@ -406,18 +406,23 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 3,
   },
-  
   menuButton: { padding: 10 },
-  menuButtonText: { fontSize: 24 },
-  appTitle: { fontSize: 18, fontWeight: 'bold', flex: 1, textAlign: 'center' },
-  viewModeHeader: { 
-    padding: 10, 
-    backgroundColor: '#e5e7eb',
+  menuButtonText: { fontSize: 24, color: '#B8860B' },
+  appTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    flex: 1,
+    textAlign: 'center',
+    color: '#333333',
+  },
+  viewModeHeader: {
+    padding: 10,
+    backgroundColor: '#fff4cb',
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10
+    gap: 10,
   },
-  viewModeTitle: { fontSize: 16, fontWeight: 'bold' },
+  viewModeTitle: { fontSize: 16, fontWeight: 'bold', color: '#333333' },
   eventsList: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -425,7 +430,7 @@ const styles = StyleSheet.create({
     padding: 10,
   },
   eventCard: {
-    backgroundColor: 'white',
+    backgroundColor: '#FFFFFF',
     width: '48%',
     padding: 10,
     borderRadius: 8,
@@ -433,19 +438,19 @@ const styles = StyleSheet.create({
     elevation: 2,
     position: 'relative',
   },
-  eventTitle: { fontSize: 16, fontWeight: 'bold' },
-  heartButton: { 
-    alignItems: 'center', 
+  eventTitle: { fontSize: 16, fontWeight: 'bold', color: '#333333' },
+  heartButton: {
+    alignItems: 'center',
     marginTop: 10,
     position: 'absolute',
     right: 10,
-    top: 10
+    top: 10,
   },
-  noEventsText: { 
-    textAlign: 'center', 
-    marginTop: 20, 
+  noEventsText: {
+    textAlign: 'center',
+    marginTop: 20,
     color: '#6b7280',
-    width: '100%'
+    width: '100%',
   },
   modalOverlay: {
     flex: 1,
@@ -454,21 +459,23 @@ const styles = StyleSheet.create({
     padding: 30,
   },
   modalContent: {
-    backgroundColor: 'white',
+    backgroundColor: '#FFFFFF',
     borderRadius: 8,
     padding: 20,
-    gap: 10
+    gap: 10,
   },
   input: {
     borderWidth: 1,
-    borderColor: '#ccc',
+    borderColor: '#E5C15E',
     borderRadius: 6,
     padding: 8,
     marginBottom: 10,
+    backgroundColor: '#fff4cb',
+    color: '#333333',
   },
   modalBtn: {
     flex: 1,
-    backgroundColor: '#2563eb',
+    backgroundColor: '#E76F51',
     padding: 10,
     borderRadius: 6,
     alignItems: 'center',
@@ -478,17 +485,18 @@ const styles = StyleSheet.create({
   },
   sortButton: {
     padding: 10,
-    backgroundColor: '#f0f0f0',
+    backgroundColor: '#FFF9E3',
     borderRadius: 6,
   },
   sortButtonText: {
     fontWeight: 'bold',
+    color: '#333333',
   },
   sortDropdown: {
     position: 'absolute',
     top: 40,
     right: 0,
-    backgroundColor: 'white',
+    backgroundColor: '#fff4cb',
     borderRadius: 6,
     elevation: 3,
     width: 150,
@@ -496,12 +504,12 @@ const styles = StyleSheet.create({
   sortOption: {
     padding: 10,
     borderBottomWidth: 1,
-    borderBottomColor: '#eee',
+    borderBottomColor: '#E5C15E',
   },
   eventDetailContainer: {
     flex: 1,
     padding: 10,
-    backgroundColor: 'white',
+    backgroundColor: '#FFFFFF',
   },
   eventDetailContent: {
     padding: 10,
@@ -510,10 +518,12 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: 'bold',
     marginBottom: 10,
+    color: '#333333',
   },
   eventDetailText: {
     fontSize: 16,
     marginBottom: 8,
+    color: '#333333',
   },
   backButton: {
     padding: 10,
@@ -521,7 +531,7 @@ const styles = StyleSheet.create({
   },
   backButtonText: {
     fontSize: 16,
-    color: '#2563eb',
+    color: '#E76F51',
   },
   actionButton: {
     padding: 12,
@@ -530,13 +540,13 @@ const styles = StyleSheet.create({
     marginTop: 15,
   },
   registerButton: {
-    backgroundColor: '#2563eb',
+    backgroundColor: '#E76F51',
   },
   cancelButton: {
     backgroundColor: '#dc2626',
   },
   actionButtonText: {
-    color: 'white',
+    color: '#FFFFFF',
     fontWeight: 'bold',
   },
   registeredBadge: {
@@ -545,5 +555,6 @@ const styles = StyleSheet.create({
     marginTop: 5,
   },
 });
+
 
 export default EventPlanner;
