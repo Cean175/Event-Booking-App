@@ -1,4 +1,5 @@
 import React from 'react';
+import { SafeAreaView, StyleSheet } from 'react-native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import AdminDashboardScreen from '../Admin/AdminDashboardScreen';
 import CreateEventScreen from '../Admin/CreateEventScreen';
@@ -24,7 +25,8 @@ const Stack = createNativeStackNavigator<RootStackParamList>();
 
 export default function StackNavigator() {
   return (
-    <Stack.Navigator initialRouteName="EventBooking">
+      <SafeAreaView style={styles.safeArea}>
+    <Stack.Navigator initialRouteName="EventBooking" screenOptions={{ headerShown: false }}>
        <Stack.Screen
         name="AdminLogin"
         component={AdminLogin}
@@ -69,5 +71,13 @@ export default function StackNavigator() {
         options={{ title: 'Event Details' }}
       />
     </Stack.Navigator>
+    </SafeAreaView>
   );
 }
+
+const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: '#FFF9E3',
+  },
+});
