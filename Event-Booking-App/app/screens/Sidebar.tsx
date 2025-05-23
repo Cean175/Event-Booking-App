@@ -145,7 +145,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     width: '70%',
-    backgroundColor: 'white',
+    backgroundColor: '#fff4cb',
     paddingTop: 20,
     justifyContent: 'space-between',
     shadowColor: '#000',
@@ -182,15 +182,15 @@ const styles = StyleSheet.create({
     padding: 16,
     margin: 16,
     borderRadius: 8,
-    backgroundColor: '#f8f8f8',
+    backgroundColor: '#E76F51',
     alignItems: 'center',
     borderWidth: 1,
     borderColor: '#d32f2f',
   },
   logoutText: {
     fontSize: 16,
-    color: '#d32f2f',
-    fontWeight: '600',
+    color: '#FFFFFF',
+    fontWeight: 'bold',
   },
 });
 
